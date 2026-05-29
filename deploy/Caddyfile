@@ -1,0 +1,3 @@
+memo.example.com {
+  reverse_proxy memo:8081
+}
