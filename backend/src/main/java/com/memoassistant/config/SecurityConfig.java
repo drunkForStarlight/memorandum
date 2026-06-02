@@ -1,5 +1,7 @@
 package com.memoassistant.config;
 
+import jakarta.servlet.DispatcherType;
+
 import java.io.IOException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 public class SecurityConfig {
@@ -30,9 +33,13 @@ public class SecurityConfig {
                 .csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler())
                 .ignoringRequestMatchers("/api/auth/login"));
         http.authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico").permitAll()
-                .requestMatchers("/api/auth/login", "/api/auth/csrf").permitAll()
-                .anyRequest().authenticated());
+                .dispatcherTypeMatchers(DispatcherType.FORWARD).permitAll()
+                .requestMatchers(
+                        new AntPathRequestMatcher("/api/auth/login"),
+                        new AntPathRequestMatcher("/api/auth/csrf"))
+                .permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/api/**")).authenticated()
+                .anyRequest().permitAll());
         http.formLogin(form -> form
                 .loginProcessingUrl("/api/auth/login")
                 .successHandler((request, response, authentication) -> writeJson(response, 200, new SimpleResponse(true, "登录成功")))
