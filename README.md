@@ -561,8 +561,11 @@ java -Dfile.encoding=UTF-8 -jar target/memo-assistant-0.1.0.jar
 Docker Compose 中已经配置：
 
 ```yaml
-JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+TZ: Asia/Shanghai
+JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
 ```
+
+`spring.jackson.time-zone` 只影响 JSON 序列化相关行为，不会改变 `LocalDateTime.now()` 的取值。容器部署时必须显式设置 JVM 时区，否则创建、完成、处理记录等服务端自动生成的时间可能按 UTC 写入。
 
 ### 邮件发不出去
 
@@ -587,4 +590,3 @@ java -jar target/memo-assistant-0.1.0.jar --server.port=18081
 ```
 
 如果用前端开发服务器，需要同步修改 `frontend/vite.config.js` 的代理地址。
-

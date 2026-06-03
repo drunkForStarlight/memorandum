@@ -5,13 +5,14 @@ services:
       dockerfile: deploy/Dockerfile
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       MEMO_DB_PATH: /data/memo.db
       MEMO_ADMIN_USERNAME: admin
       MEMO_ADMIN_PASSWORD: change-me-before-first-run
       MEMO_WEEKLY_RECIPIENTS: ""
       MEMO_MAIL_FROM: memo@example.com
       SPRING_MAIL_HOST: ""
-      JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+      JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
     volumes:
       - memo-data:/data
     ports:

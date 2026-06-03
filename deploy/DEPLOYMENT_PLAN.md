@@ -97,11 +97,12 @@ services:
     image: memorandum/memo-assistant:latest
     restart: unless-stopped
     environment:
+      TZ: Asia/Shanghai
       MEMO_DB_PATH: /data/memo.db
       MEMO_ADMIN_USERNAME: admin
       MEMO_ADMIN_PASSWORD: <部署时生成>
       MEMO_ADMIN_DISPLAY_NAME: Admin
-      JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8"
+      JAVA_TOOL_OPTIONS: "-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai"
     volumes:
       - ../data:/data
       - ../logs:/logs
@@ -113,6 +114,7 @@ services:
 
 - 端口绑定 `127.0.0.1`，不对公网开放。
 - 数据挂载到 `/opt/memorandum/data`。
+- 容器和 JVM 显式使用 `Asia/Shanghai`，避免 `LocalDateTime.now()` 按 UTC 写入。
 - 初始管理员密码部署时生成，不使用代码默认弱口令。
 - 初始化管理员只在数据库不存在或用户不存在时生效；数据库创建后，环境变量中的初始密码不会覆盖已有用户。
 

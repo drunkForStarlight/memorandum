@@ -142,3 +142,67 @@
 - 数据已持久化到 `/opt/memorandum/data`。
 - 迁移包已准备。
 - 部署方案和部署记录已落盘到服务器 `/opt/memorandum/docs`。
+
+## 2026-06-03 时区问题修复记录
+
+### 问题现象
+
+- 用户在北京时间下午完成任务后，页面时间线显示为上午九点多。
+- 服务器宿主机时间正常：
+  - 宿主机为 `Asia/Shanghai`
+  - 宿主机时间显示为 CST
+- 容器内时间初始为 UTC：
+  - 容器 `date` 显示 `Wed Jun 3 09:10:09 AM UTC 2026`
+
+### 根因
+
+- 后端完成时间、创建时间、更新时间和处理日志时间由 `LocalDateTime.now()` 生成。
+- `LocalDateTime.now()` 使用 JVM 默认时区。
+- Docker 容器/JVM 默认时区是 UTC。
+- `spring.jackson.time-zone: Asia/Shanghai` 不会改变 JVM 默认时区，也不会改变 `LocalDateTime.now()` 的取值。
+- 前端展示时间时只是将 `T` 替换为空格并截断到分钟，没有做时区转换，所以页面展示的是后端写入数据库的 UTC 本地时间字符串。
+
+### 修复
+
+- 更新 `/opt/memorandum/app/docker-compose.yml`：
+  - 增加 `TZ=Asia/Shanghai`
+  - 将 `JAVA_TOOL_OPTIONS` 改为 `-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai`
+- 重启容器后验证：
+  - 宿主机时间：`Wed Jun 3 05:13:47 PM CST 2026`
+  - 容器时间：`Wed Jun 3 05:13:47 PM CST 2026`
+  - 容器环境变量包含 `TZ=Asia/Shanghai`
+  - 容器环境变量包含 `JAVA_TOOL_OPTIONS=-Dfile.encoding=UTF-8 -Duser.timezone=Asia/Shanghai`
+
+### 已有数据修正
+
+- 修正前先生成备份：
+  - `/opt/memorandum/backups/memorandum-data-20260603-171219.tar.gz`
+- 对服务端自动生成的时间字段加 8 小时：
+  - `tasks.completed_at`
+  - `tasks.created_at`
+  - `tasks.updated_at`
+  - `tasks.reminder_sent_at`
+  - `task_logs.created_at`
+  - `weekly_reports.sent_at`
+  - `weekly_reports.created_at`
+  - `system_settings.updated_at`
+  - `app_users.created_at`
+  - `app_users.updated_at`
+- 未调整用户手工选择的业务时间：
+  - `tasks.due_at`
+  - `tasks.remind_at`
+
+### 验证结果
+
+- 任务 1 完成时间已从 `2026-06-03T09:04:08...` 修正为 `2026-06-03T17:04:08...`。
+- 任务 1 处理日志已从 `09:03/09:04` 修正为 `17:03/17:04`。
+- 首页返回 HTTP 200。
+- API 返回的完成记录时间为北京时间。
+- 修复后生成备份：
+  - `/opt/memorandum/backups/memorandum-data-20260603-171408.tar.gz`
+- 修复后生成迁移包：
+  - `/opt/memorandum/backups/memorandum-migration-20260603-171408.tar.gz`
+- 文档同步后再次生成当前最新备份：
+  - `/opt/memorandum/backups/memorandum-data-20260603-171629.tar.gz`
+- 文档同步后再次生成当前最新迁移包：
+  - `/opt/memorandum/backups/memorandum-migration-20260603-171629.tar.gz`
